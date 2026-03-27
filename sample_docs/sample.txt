@@ -1,0 +1,69 @@
+Retrieval-Augmented Generation: A Comprehensive Overview
+
+1. Introduction
+
+Retrieval-Augmented Generation (RAG) is a technique that enhances language model outputs by grounding them in external knowledge retrieved from a document corpus. Rather than relying solely on parametric knowledge learned during pre-training, RAG systems dynamically fetch relevant passages at inference time and use them as context for generating accurate, up-to-date, and verifiable answers.
+
+The core insight behind RAG is simple: even the largest language models have knowledge cutoffs, can hallucinate facts, and struggle with domain-specific or proprietary information. By combining a retriever with a generator, RAG addresses all three limitations simultaneously.
+
+2. Architecture
+
+A standard RAG pipeline consists of three stages:
+
+Stage 1 — Document Ingestion: Raw documents (PDFs, web pages, databases) are parsed, cleaned, and split into manageable chunks. Each chunk is converted into a dense vector embedding using a model like sentence-transformers (e.g., all-MiniLM-L6-v2). These embeddings are stored in a vector database such as FAISS, Pinecone, or Weaviate.
+
+Stage 2 — Retrieval: When a user submits a query, the same embedding model encodes the query into a vector. A similarity search (typically cosine similarity or inner product) is performed against the vector store to find the top-k most relevant document chunks. This step is critical — the quality of retrieval directly determines the quality of the final answer.
+
+Stage 3 — Generation: The retrieved chunks are formatted into a prompt alongside the user's question and passed to a language model. The model synthesises an answer grounded in the retrieved evidence, often including citations back to the source documents.
+
+3. Chunking Strategies
+
+How documents are split into chunks significantly impacts retrieval quality. Common strategies include:
+
+Fixed-size chunking: Split every N characters or tokens. Simple but can break mid-sentence or mid-paragraph, losing context.
+
+Recursive splitting: Try splitting by paragraphs first, then sentences, then words. This preserves semantic boundaries and is the most widely used approach in production systems.
+
+Semantic chunking: Use an embedding model to detect topic shifts and split at natural semantic boundaries. More compute-intensive but produces the highest quality chunks.
+
+Overlap: Regardless of strategy, adding overlap between consecutive chunks (e.g., 50-100 tokens) helps preserve context that spans chunk boundaries.
+
+4. Embedding Models
+
+The choice of embedding model affects both retrieval accuracy and system performance:
+
+all-MiniLM-L6-v2: A compact (80MB) model that produces 384-dimensional embeddings. Excellent balance of quality and speed. Suitable for most applications and runs efficiently on CPU.
+
+all-mpnet-base-v2: Larger model with higher accuracy, producing 768-dimensional embeddings. Better for domains requiring nuanced semantic understanding.
+
+OpenAI text-embedding-3-small: Cloud-hosted model with strong performance. Requires an API key and incurs per-token costs.
+
+5. Vector Stores
+
+FAISS (Facebook AI Similarity Search): Open-source library optimised for dense vector similarity search. Supports exact (IndexFlatIP) and approximate (IndexIVFFlat, IndexHNSW) search. Runs locally with no external dependencies. Ideal for prototyping and moderate-scale applications (up to ~10M vectors on a single machine).
+
+Pinecone: Managed vector database service. Handles scaling, replication, and indexing automatically. Best for production deployments requiring high availability.
+
+Weaviate: Open-source vector database with built-in modules for vectorisation, filtering, and hybrid search (combining dense vectors with keyword matching).
+
+6. Evaluation Metrics
+
+Evaluating RAG systems requires measuring both retrieval quality and answer quality:
+
+Retrieval metrics: Precision@k (fraction of retrieved chunks that are relevant), Recall@k (fraction of relevant chunks that are retrieved), Mean Reciprocal Rank (MRR).
+
+Answer metrics: Faithfulness (is the answer supported by the retrieved context?), Relevance (does the answer address the question?), Completeness (does the answer cover all aspects of the question?).
+
+7. Advanced Techniques
+
+Hybrid search: Combine dense vector search with sparse keyword matching (BM25) for improved recall, especially on queries with specific proper nouns or technical terms.
+
+Reranking: After initial retrieval, apply a cross-encoder model to rerank results. Cross-encoders are more accurate than bi-encoders but too slow for first-stage retrieval over large corpora.
+
+Query expansion: Rephrase or expand the user's query using an LLM before retrieval to improve recall for ambiguous or underspecified questions.
+
+Contextual compression: After retrieval, compress the chunks to extract only the portions relevant to the query, reducing noise in the generation context.
+
+8. Conclusion
+
+RAG represents a practical and powerful paradigm for building knowledge-grounded AI applications. By separating the knowledge store from the reasoning engine, RAG systems can be updated without retraining, audited for factual accuracy, and adapted to specialised domains with minimal effort. The combination of efficient vector search, high-quality embeddings, and capable language models makes RAG the foundation of most modern document Q&A, chatbot, and knowledge management systems.
